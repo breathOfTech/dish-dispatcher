@@ -1,0 +1,8 @@
+{
+    "hotShelfCapacity": 20,
+    "coldShelfCapacity": 20,
+    "frozenShelfCapacity": 20,
+    "overflowCapacity": 30,
+    "ordersPerSecond": 2.0,
+    "simulationDuration": 300
+  }
