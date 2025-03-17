@@ -19,6 +19,7 @@ type Config struct {
 	OverflowCapacity    int     `json:"overflowCapacity"`
 	OrdersPerSecond     float64 `json:"ordersPerSecond"`
 	SimulationDuration  int     `json:"simulationDuration"` // in seconds, 0 means run indefinitely
+	DecayModifier       float64 `json:"decayModifier"`
 }
 
 // DefaultConfig returns a default configuration
@@ -30,6 +31,7 @@ func DefaultConfig() *Config {
 		OverflowCapacity:    30,
 		OrdersPerSecond:     2.0,
 		SimulationDuration:  300, // 5 minutes by default
+		DecayModifier:       5.0,
 	}
 }
 

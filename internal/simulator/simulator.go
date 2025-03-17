@@ -32,6 +32,7 @@ type Simulator struct {
 	cleanupInterval  time.Duration
 	statsMutex       sync.Mutex
 	ordersProcessed  int // Track processed orders
+	decayModifier    float64
 }
 
 // NewSimulator creates a new simulator with the given configuration
@@ -48,6 +49,8 @@ func NewSimulator(cfg *config.Config, ordersFile string) (*Simulator, error) {
 		cfg.FrozenShelfCapacity,
 		cfg.OverflowCapacity,
 	)
+	// Ensure decayModifier is set from config
+	decayModifier := cfg.DecayModifier
 
 	return &Simulator{
 		ShelfManager:     shelfManager,
@@ -55,7 +58,8 @@ func NewSimulator(cfg *config.Config, ordersFile string) (*Simulator, error) {
 		Orders:           orders,
 		stop:             make(chan struct{}),
 		deliveryInterval: time.Millisecond * 500, // Check for deliveries every 500ms
-		cleanupInterval:  time.Second * 2,        // Check for expired orders every 2 seconds
+		cleanupInterval:  time.Millisecond * 500, // Check for expired orders every 500ms
+		decayModifier:    decayModifier,
 	}, nil
 }
 
@@ -167,9 +171,9 @@ func (s *Simulator) Stop() {
 // createOrderFromList creates an order from the loaded list
 func (s *Simulator) createOrderFromList() {
 	orderData := s.Orders[s.ordersProcessed]
-
+	modifiedDecayRate := orderData.DecayRate * s.decayModifier
 	temp := order.Temperature(orderData.Temp)
-	newOrder := order.NewOrder(orderData.Name, temp, orderData.ShelfLife, orderData.DecayRate)
+	newOrder := order.NewOrder(orderData.Name, temp, orderData.ShelfLife, modifiedDecayRate)
 
 	success := s.ShelfManager.PlaceOrder(newOrder)
 	if success {
@@ -227,12 +231,16 @@ func (s *Simulator) attemptDeliveries() {
 
 	// For each order, there's a 30% chance it will be delivered in this cycle
 	for _, order := range allOrders {
-		if rand.Float64() < 0.30 {
-			if s.ShelfManager.DeliverOrder(order.ID) {
-				fmt.Printf("🚚 Order delivered: %s (Value: %.2f)\n",
-					order.Name, order.CalculateValue(time.Now()))
-			}
+		//if rand.Float64() < 0.30 {
+		// Introduce a random delay between 2 to 6 seconds before delivering the order
+		randomDelay := time.Duration(rand.IntN(5)+2) * time.Second
+		time.Sleep(randomDelay)
+
+		if s.ShelfManager.DeliverOrder(order.ID) {
+			fmt.Printf("🚚 Order delivered: %s (Value: %.2f)\n",
+				order.Name, order.CalculateValue(time.Now()))
 		}
+		//}
 	}
 }
 

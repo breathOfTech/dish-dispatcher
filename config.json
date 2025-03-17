@@ -4,5 +4,6 @@
     "frozenShelfCapacity": 20,
     "overflowCapacity": 30,
     "ordersPerSecond": 2.0,
-    "simulationDuration": 300
+    "simulationDuration": 300,
+    "decayModifier":       1.0
   }

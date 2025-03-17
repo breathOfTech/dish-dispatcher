@@ -77,6 +77,33 @@ func (o *Order) CalculateValue(now time.Time) float64 {
 	return remainingShelfLife / o.ShelfLife
 }
 
+func (o *Order) CalculateValueV2(now time.Time) float64 {
+	// If the order hasn't been placed on a shelf yet, its value is 1.0
+	if o.PlacedOnShelfAt.IsZero() {
+		return 1.0
+	}
+
+	orderAge := now.Sub(o.PlacedOnShelfAt).Seconds()
+	shelfDecayModifier := 1.0 // Default for primary shelves
+
+	if !o.PlacedOnOverflow.IsZero() {
+		// Order is on overflow
+		overflowAge := now.Sub(o.PlacedOnOverflow).Seconds()
+		primaryAge := o.PlacedOnOverflow.Sub(o.PlacedOnShelfAt).Seconds()
+		orderAge = primaryAge + overflowAge
+		shelfDecayModifier = 2.0 // Overflow decay modifier
+	}
+
+	decayAmount := o.DecayRate * orderAge * shelfDecayModifier
+	remainingShelfLife := o.ShelfLife - orderAge - decayAmount
+
+	if remainingShelfLife <= 0 {
+		return 0.0
+	}
+
+	return remainingShelfLife / o.ShelfLife
+}
+
 func (o *Order) IsExpired(now time.Time) bool {
 	return o.CalculateValue(now) <= 0
 }
